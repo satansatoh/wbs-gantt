@@ -7,4 +7,8 @@ if (!endpoint || !key) {
     throw new Error('Cosmos DBの接続情報が環境変数に設定されていません');
 }
 
+/**
+ * Azure Cosmos DBクライアントインスタンス
+ * @type {CosmosClient}
+ */
 export const cosmosClient = new CosmosClient({ endpoint, key }); 

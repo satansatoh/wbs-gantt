@@ -1,0 +1,54 @@
+---
+description: *.*ts
+globs: 
+alwaysApply: false
+---
+# コーディング規約
+
+## 1. ファイル命名・ディレクトリ構成
+- ディレクトリ・ファイル名は原則として英小文字・ケバブケース（例: user-profile.ts）
+- 型定義ファイルは types/ 配下、ユーティリティは lib/ 配下に配置
+
+## 2. コードスタイル
+- インデントはスペース2つ
+- セミコロンは必須
+- シングルクォートを推奨
+- 1行の最大長は120文字
+- import順序は外部→内部→相対パス
+
+## 3. 変数・関数・クラス命名
+- 変数・関数: キャメルケース（例: userName, getUser）
+- クラス・型: パスカルケース（例: UserService, ProjectType）
+- 定数: 全て大文字＋アンダースコア（例: MAX_LENGTH）
+
+## 4. コメント・ドキュメンテーション
+- メソッド・クラス定義時は必ずjsDoc形式でコメントを記載すること
+- jsDocコメント例:
+
+```typescript
+/**
+ * ユーザー情報を取得する
+ * @param {string} userId - ユーザーID
+ * @returns {Promise<User>} ユーザー情報
+ */
+async function getUser(userId: string): Promise<User> {
+  // ...
+}
+```
+
+- クラス定義時:
+```typescript
+/**
+ * プロジェクト管理サービス
+ */
+class ProjectService {
+  // ...
+}
+```
+
+- 変数や複雑なロジックにも適宜コメントを記載すること
+
+## 5. その他
+- 型安全を重視し、anyの使用は原則禁止
+- 例外処理はtry-catchで明示的に行う
+- TODOコメントは `// TODO:` で記載し、後で必ず対応する
