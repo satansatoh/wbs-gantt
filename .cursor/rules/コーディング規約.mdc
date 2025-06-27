@@ -1,6 +1,6 @@
 ---
-description: *.*ts
-globs: 
+description: 
+globs: *.ts,*.tsx
 alwaysApply: false
 ---
 # コーディング規約
@@ -52,3 +52,7 @@ class ProjectService {
 - 型安全を重視し、anyの使用は原則禁止
 - 例外処理はtry-catchで明示的に行う
 - TODOコメントは `// TODO:` で記載し、後で必ず対応する
+
+## 6. Linter対応
+- linterエラー・警告は必ず修正し、クリーンな状態を保つこと
+
