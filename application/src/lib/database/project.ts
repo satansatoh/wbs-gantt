@@ -2,7 +2,7 @@ import { cosmosClient } from './client';
 import { Project } from '../../types';
 import { COSMOS_CONTAINER } from './container-constants';
 
-const DATABASE_ID = 'gantt-wbs-app';
+const DATABASE_ID = process.env.COSMOS_DB_DATABASE as string;
 
 /**
  * プロジェクトを新規作成する

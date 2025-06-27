@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuthStore } from '@/stores/authStore';
 
 /**
  * ログイン画面
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
  */
 export default function LoginPage() {
     const router = useRouter();
+    const setToken = useAuthStore((state) => state.setToken);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -33,10 +35,13 @@ export default function LoginPage() {
             if (!data.success) {
                 setError(data.error?.message || "ログインに失敗しました");
             } else {
-                // TODO: トークン保存・状態管理
+                if (data.token) {
+                    setToken(data.token);
+                }
                 router.push("/dashboard");
             }
         } catch (e) {
+            console.error('Login error:', e); // ← これを必ず追加
             setError("サーバーエラーが発生しました");
         } finally {
             setLoading(false);

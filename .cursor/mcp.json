@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "server-filesystem": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "<ここは参照させたいディレクトリの絶対パスを入力>"
+            ]
+        }
+    }
+}

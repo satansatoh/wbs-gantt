@@ -6,6 +6,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 // 禁止文字（例: 絵文字や一部記号）
 const FORBIDDEN_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}<>$%]/u;
@@ -78,7 +79,7 @@ export default function ProjectNewPage(): JSX.Element {
         }
         setLoading(true);
         try {
-            const res = await fetch('/api/project', {
+            const res = await fetchWithAuth('/api/project', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, description }),

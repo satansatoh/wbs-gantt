@@ -5,6 +5,7 @@ import type { JSX } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/types/project';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 
 /**
  * ダッシュボード画面
@@ -23,7 +24,7 @@ export default function DashboardPage(): JSX.Element {
             setLoading(true);
             setError("");
             try {
-                const res = await fetch("/api/project");
+                const res = await fetchWithAuth('/api/project', { method: 'GET' });
                 const data = await res.json();
                 if (!data.success) {
                     setError(data.error?.message || "プロジェクト取得に失敗しました");
