@@ -1,13 +1,15 @@
-// JWTユーティリティ雛形
+import jwt, { SignOptions } from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
 /**
  * JWTを発行する
- * @param {object} payload - JWTのペイロード
+ * @param {string | object | Buffer} payload - JWTのペイロード
  * @returns {Promise<string>} JWTトークン
  */
-export async function signJwt(payload: object): Promise<string> {
-    // TODO: JWT発行処理を実装
-    return '';
+export async function signJwt(payload: string | object | Buffer): Promise<string> {
+    return jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN } as SignOptions);
 }
 
 /**
@@ -16,6 +18,9 @@ export async function signJwt(payload: object): Promise<string> {
  * @returns {Promise<object|null>} 検証結果のペイロードまたはnull
  */
 export async function verifyJwt(token: string): Promise<object | null> {
-    // TODO: JWT検証処理を実装
-    return null;
+    try {
+        return jwt.verify(token, JWT_SECRET) as object;
+    } catch {
+        return null;
+    }
 } 

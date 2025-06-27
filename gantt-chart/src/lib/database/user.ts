@@ -63,4 +63,15 @@ export async function deleteUser(id: string) {
     const database = cosmosClient.database(DATABASE_ID);
     const container = database.container(CONTAINER_ID);
     await container.item(id, id).delete();
+}
+
+/**
+ * emailでユーザーを取得する
+ * @param {string} email - メールアドレス
+ * @returns {Promise<User & { password: string } | null>} ユーザー情報
+ */
+export async function getUserByEmail(email: string) {
+    const users = await listUsers();
+    // @ts-ignore: passwordはDB保存用プロパティ
+    return users.find(u => u.email === email) ?? null;
 } 

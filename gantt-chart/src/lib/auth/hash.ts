@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 // パスワードハッシュ化ユーティリティ雛形
 
 /**
@@ -6,8 +8,8 @@
  * @returns {Promise<string>} ハッシュ値
  */
 export async function hashPassword(password: string): Promise<string> {
-    // TODO: パスワードハッシュ化処理を実装
-    return '';
+    const saltRounds = 10;
+    return await bcrypt.hash(password, saltRounds);
 }
 
 /**
@@ -17,6 +19,5 @@ export async function hashPassword(password: string): Promise<string> {
  * @returns {Promise<boolean>} 検証結果
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-    // TODO: パスワード検証処理を実装
-    return false;
+    return await bcrypt.compare(password, hash);
 } 
