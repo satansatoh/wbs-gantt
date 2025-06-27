@@ -7,25 +7,25 @@ const CONTAINER_ID = 'projects';
 /**
  * プロジェクトを新規作成する
  * @param {Project} project - プロジェクトデータ
- * @returns {Promise<Project>} 作成されたプロジェクト
+ * @returns {Promise<Project | null>} 作成されたプロジェクト
  */
 export async function createProject(project: Project) {
-    const { database } = cosmosClient.database(DATABASE_ID);
-    const { container } = database.container(CONTAINER_ID);
-    const { resource } = await container.items.create(project);
-    return resource as Project;
+    const database = cosmosClient.database(DATABASE_ID);
+    const container = database.container(CONTAINER_ID);
+    const response = await container.items.create(project);
+    return response.resource ?? null;
 }
 
 /**
  * プロジェクトをIDで取得する
  * @param {string} id - プロジェクトID
- * @returns {Promise<Project | undefined>} プロジェクトデータ
+ * @returns {Promise<Project | null>} プロジェクトデータ
  */
 export async function getProject(id: string) {
-    const { database } = cosmosClient.database(DATABASE_ID);
-    const { container } = database.container(CONTAINER_ID);
-    const { resource } = await container.item(id, id).read<Project>();
-    return resource;
+    const database = cosmosClient.database(DATABASE_ID);
+    const container = database.container(CONTAINER_ID);
+    const response = await container.item(id, id).read<Project>();
+    return response.resource ?? null;
 }
 
 /**
@@ -33,8 +33,8 @@ export async function getProject(id: string) {
  * @returns {Promise<Project[]>} プロジェクト配列
  */
 export async function listProjects() {
-    const { database } = cosmosClient.database(DATABASE_ID);
-    const { container } = database.container(CONTAINER_ID);
+    const database = cosmosClient.database(DATABASE_ID);
+    const container = database.container(CONTAINER_ID);
     const { resources } = await container.items.readAll<Project>().fetchAll();
     return resources;
 }
@@ -43,15 +43,15 @@ export async function listProjects() {
  * プロジェクトを更新する
  * @param {string} id - プロジェクトID
  * @param {Partial<Project>} data - 更新データ
- * @returns {Promise<Project>} 更新後のプロジェクト
+ * @returns {Promise<Project | null>} 更新後のプロジェクト
  */
 export async function updateProject(id: string, data: Partial<Project>) {
-    const { database } = cosmosClient.database(DATABASE_ID);
-    const { container } = database.container(CONTAINER_ID);
-    const { resource: old } = await container.item(id, id).read<Project>();
-    const updated = { ...old, ...data, updatedAt: new Date() };
-    const { resource } = await container.items.upsert(updated);
-    return resource as Project;
+    const database = cosmosClient.database(DATABASE_ID);
+    const container = database.container(CONTAINER_ID);
+    const oldResponse = await container.item(id, id).read<Project>();
+    const updated = { ...oldResponse.resource, ...data, updatedAt: new Date() };
+    const response = await container.items.upsert(updated);
+    return response.resource ?? null;
 }
 
 /**
@@ -60,7 +60,7 @@ export async function updateProject(id: string, data: Partial<Project>) {
  * @returns {Promise<void>} 削除結果
  */
 export async function deleteProject(id: string) {
-    const { database } = cosmosClient.database(DATABASE_ID);
-    const { container } = database.container(CONTAINER_ID);
+    const database = cosmosClient.database(DATABASE_ID);
+    const container = database.container(CONTAINER_ID);
     await container.item(id, id).delete();
 } 
