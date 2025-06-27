@@ -10,6 +10,7 @@ import {
     DragEndEvent,
 } from '@dnd-kit/core';
 import {
+    arrayMove,
     SortableContext,
     useSortable,
     verticalListSortingStrategy,
@@ -77,7 +78,7 @@ function buildTaskTree(tasks: typeof dummyTasks) {
     return roots;
 }
 
-function DraggableTaskRow({ task, level, onDragHandle, activeId }: { task: any; level: number; onDragHandle: (id: string, parentId: string | null) => void; activeId: string | null }) {
+function DraggableTaskRow({ task, level, onDragHandle, activeId, onIndent, onOutdent }: { task: any; level: number; onDragHandle: (id: string, parentId: string | null) => void; activeId: string | null; onIndent: (id: string) => void; onOutdent: (id: string) => void; }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
     return (
         <div
@@ -91,11 +92,9 @@ function DraggableTaskRow({ task, level, onDragHandle, activeId }: { task: any; 
                 position: 'relative',
             }}
             className={`flex items-center border-b text-xs hover:bg-gray-50 bg-white ${isDragging ? 'ring-2 ring-blue-400' : ''}`}
-            {...attributes}
-            {...listeners}
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()} // ドラッグハンドル以外でのドラッグ開始を防止
         >
-            <div className="w-3 cursor-grab mr-1" style={{ minWidth: 12 }}>::</div>
+            <div className="w-3 cursor-grab mr-1" style={{ minWidth: 12 }} {...attributes} {...listeners}>::</div>
             <div className="w-20 py-2 px-2 text-gray-700">{task.code}</div>
             <div className="w-28 py-2 px-2 text-gray-700">{task.phase}</div>
             <div className="flex-1 py-2 px-2 text-rose-700 font-medium">{task.title}</div>
@@ -113,13 +112,35 @@ function DraggableTaskRow({ task, level, onDragHandle, activeId }: { task: any; 
                     <span className="text-xs text-gray-600">{task.progress}%</span>
                 </div>
             </div>
+            <div className="flex items-center gap-1 px-2 flex-shrink-0">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onOutdent(task.id);
+                    }}
+                    className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded"
+                    title="アウトデント"
+                >
+                    &lt;
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onIndent(task.id);
+                    }}
+                    className="px-2 py-1 text-gray-600 hover:bg-gray-200 rounded"
+                    title="インデント"
+                >
+                    &gt;
+                </button>
+            </div>
         </div>
     );
 }
 
-function TaskTree({ nodes, level, onDragHandle, activeId }: { nodes: any[]; level: number; onDragHandle: (id: string, parentId: string | null) => void; activeId: string | null }) {
+function TaskTree({ nodes, level, onDragHandle, activeId, onIndent, onOutdent }: { nodes: any[]; level: number; onDragHandle: (id: string, parentId: string | null) => void; activeId: string | null; onIndent: (id: string) => void; onOutdent: (id: string) => void; }) {
     return (
-        <SortableContext items={nodes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
+        <>
             {nodes.map((task) => (
                 <div key={task.id} className="relative">
                     {/* 罫線（親がいる場合のみ） */}
@@ -138,13 +159,13 @@ function TaskTree({ nodes, level, onDragHandle, activeId }: { nodes: any[]; leve
                             ></div>
                         </div>
                     )}
-                    <DraggableTaskRow task={task} level={level} onDragHandle={onDragHandle} activeId={activeId} />
+                    <DraggableTaskRow task={task} level={level} onDragHandle={onDragHandle} activeId={activeId} onIndent={onIndent} onOutdent={onOutdent} />
                     {task.children && task.children.length > 0 && (
-                        <TaskTree nodes={task.children} level={level + 1} onDragHandle={onDragHandle} activeId={activeId} />
+                        <TaskTree nodes={task.children} level={level + 1} onDragHandle={onDragHandle} activeId={activeId} onIndent={onIndent} onOutdent={onOutdent} />
                     )}
                 </div>
             ))}
-        </SortableContext>
+        </>
     );
 }
 
@@ -154,30 +175,114 @@ export default function ProjectTaskPage() {
     const [tasks, setTasks] = useState(dummyTasks);
     const [activeId, setActiveId] = useState<string | null>(null);
     const hasGantt = tasks.some((t) => t.startDate && t.endDate);
-    const sortedTasks = [...tasks].sort((a, b) => a.code.localeCompare(b.code, 'ja', { numeric: true }));
-    const tree = buildTaskTree(sortedTasks);
+    const tree = buildTaskTree(tasks);
 
     const sensors = useSensors(useSensor(PointerSensor));
 
     // ドラッグ終了時の処理（親子関係の変更対応）
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        console.log("Drag ended: Active ID", active.id, "Over ID", over?.id);
         setActiveId(null);
         if (!over || active.id === over.id) return;
-        setTasks((prev) => {
-            // 無限ループ防止: 自分自身や子孫を親にしない
-            const isDescendant = (id: string, parentId: string | null): boolean => {
-                if (!parentId) return false;
-                if (id === parentId) return true;
-                const parent = prev.find((t) => t.id === parentId);
-                return parent ? isDescendant(id, parent.parentId) : false;
-            };
-            if (isDescendant(active.id as string, over.id as string)) {
-                return prev; // 子孫を親にしようとした場合は何もしない
+
+        setTasks((prevTasks) => {
+            const activeTask = prevTasks.find((t) => t.id === active.id);
+            const overTask = prevTasks.find((t) => t.id === over.id);
+
+            if (!activeTask || !overTask) {
+                return prevTasks;
             }
-            return prev.map((t) =>
-                t.id === active.id ? { ...t, parentId: over.id as string } : t
-            );
+
+            // 同じ親を持つタスク間でのみ並び替えを許可
+            if (activeTask.parentId !== overTask.parentId) {
+                console.log("Cannot move between different parent levels. Active Parent:", activeTask.parentId, "Over Parent:", overTask.parentId);
+                return prevTasks;
+            }
+
+            // Find the indices of active and over tasks in the *flat* prevTasks array
+            const oldIndex = prevTasks.findIndex((item) => item.id === active.id);
+            const newIndex = prevTasks.findIndex((item) => item.id === over.id);
+
+            console.log("Old Index:", oldIndex, "New Index:", newIndex);
+
+            if (oldIndex === -1 || newIndex === -1) {
+                return prevTasks; // Should not happen
+            }
+
+            // Use arrayMove on the entire flat list
+            return arrayMove(prevTasks, oldIndex, newIndex);
+        });
+    };
+
+    const handleIndent = (taskId: string) => {
+        setTasks((prevTasks) => {
+            const taskToIndentIndex = prevTasks.findIndex((t) => t.id === taskId);
+            if (taskToIndentIndex === -1) return prevTasks;
+
+            const taskToIndent = prevTasks[taskToIndentIndex];
+
+            // 同じ親を持つタスクの中から、インデント対象の直前のタスクを見つける
+            const siblings = prevTasks.filter(t => t.parentId === taskToIndent.parentId);
+            const taskToIndentInSiblingsIndex = siblings.findIndex(t => t.id === taskId);
+            const prevTask = siblings[taskToIndentInSiblingsIndex - 1];
+
+            console.log("handleIndent: Task to indent:", taskToIndent);
+            console.log("handleIndent: Previous task (sibling):", prevTask);
+
+            // 直前のタスクが存在し、かつ直前のタスクが自分自身でない場合
+            if (prevTask && prevTask.id !== taskToIndent.id) {
+                // 無限ループ防止: 自分自身や子孫を親にしない
+                const isDescendant = (childId: string, potentialAncestorId: string | null, tasks: typeof dummyTasks): boolean => {
+                    if (!potentialAncestorId) return false;
+                    let current = tasks.find(t => t.id === childId);
+                    while (current && current.parentId) {
+                        if (current.parentId === potentialAncestorId) {
+                            return true;
+                        }
+                        current = tasks.find(t => t.id === current.parentId);
+                    }
+                    return false;
+                };
+
+                if (isDescendant(taskToIndent.id, prevTask.id, prevTasks)) {
+                    console.log("handleIndent: Cannot indent: would create a circular dependency.");
+                    return prevTasks;
+                }
+
+                // 新しい配列を作成し、対象のタスクの parentId を更新
+                const updatedTasks = prevTasks.map((task) =>
+                    task.id === taskId ? { ...task, parentId: prevTask.id } : task
+                );
+                console.log("handleIndent: New parentId for task", taskId, ":", prevTask.id);
+                return updatedTasks;
+            }
+            console.log("handleIndent: Cannot indent: No previous task or same task.");
+            return prevTasks;
+        });
+    };
+
+    const handleOutdent = (taskId: string) => {
+        setTasks((prevTasks) => {
+            const taskToOutdent = prevTasks.find((t) => t.id === taskId);
+            console.log("Task to outdent (before):", taskToOutdent);
+            if (!taskToOutdent || !taskToOutdent.parentId) {
+                console.log("Cannot outdent: No task found or no parentId.");
+                return prevTasks; // ルートタスクはアウトデントできない
+            }
+
+            const parentTask = prevTasks.find((t) => t.id === taskToOutdent.parentId);
+            console.log("Parent task:", parentTask);
+            if (parentTask) {
+                console.log("Parent's parentId:", parentTask.parentId);
+                // 新しい配列を作成し、対象のタスクの parentId を更新
+                const updatedTasks = prevTasks.map((task) =>
+                    task.id === taskId ? { ...task, parentId: parentTask.parentId } : task
+                );
+                console.log("Task to outdent (after):", updatedTasks.find(t => t.id === taskId));
+                return updatedTasks;
+            }
+            return prevTasks;
         });
     };
 
@@ -202,10 +307,13 @@ export default function ProjectTaskPage() {
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
-                    onDragStart={(e: any) => setActiveId(e.active.id as string)}
+                    onDragStart={(e: any) => {
+                        console.log("Drag started:", e.active.id);
+                        setActiveId(e.active.id as string);
+                    }}
                 >
                     <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        <TaskTree nodes={tree} level={0} onDragHandle={() => { }} activeId={activeId} />
+                        <TaskTree nodes={tree} level={0} onDragHandle={() => { }} activeId={activeId} onIndent={handleIndent} onOutdent={handleOutdent} />
                     </SortableContext>
                 </DndContext>
             </div>
