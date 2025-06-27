@@ -4,6 +4,7 @@ interface AuthState {
     token: string | null;
     setToken: (token: string) => void;
     clearToken: () => void;
+    initializeToken: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -20,4 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
             localStorage.removeItem('token');
         }
     },
+    initializeToken: () => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token');
+            if (token) set({ token });
+        }
+    }
 })); 

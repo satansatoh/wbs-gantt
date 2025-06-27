@@ -5,7 +5,7 @@
       "type": "node-terminal",
       "name": "Next.js: dev",
       "request": "launch",
-      "command": "cd gantt-chart && pnpm dev"
+      "command": "cd application && pnpm dev"
     }
   ]
 }

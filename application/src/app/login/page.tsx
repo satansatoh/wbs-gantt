@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,19 @@ import { useAuthStore } from '@/stores/authStore';
 export default function LoginPage() {
     const router = useRouter();
     const setToken = useAuthStore((state) => state.setToken);
+    const token = useAuthStore((state) => state.token);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // tokenがセットされたらダッシュボードへ遷移
+    useEffect(() => {
+        console.log('useEffect token:', token);
+        if (token) {
+            router.push("/dashboard");
+        }
+    }, [token, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,10 +44,14 @@ export default function LoginPage() {
             if (!data.success) {
                 setError(data.error?.message || "ログインに失敗しました");
             } else {
-                if (data.token) {
-                    setToken(data.token);
+                console.log('setToken called with:', data.data.token);
+                if (data.data.token) {
+                    setToken(data.data.token);
+                    console.log('setToken called with:', data.data.token);
+                    setTimeout(() => {
+                        console.log('token after setToken:', useAuthStore.getState().token);
+                    }, 100);
                 }
-                router.push("/dashboard");
             }
         } catch (e) {
             console.error('Login error:', e); // ← これを必ず追加
