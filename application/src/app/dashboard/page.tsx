@@ -57,7 +57,7 @@ export default function DashboardPage(): JSX.Element {
                         <ul className="space-y-2">
                             {projects.map((p) => (
                                 <li key={p.id} className="border rounded px-4 py-2 bg-gray-100 flex justify-between items-center">
-                                    <span>{p.name}</span>
+                                    <Link href={`/project/${p.id}`} className="text-blue-600 hover:underline font-semibold">{p.name}</Link>
                                     <Link href={`/project/${p.id}`} className="text-blue-600 hover:underline text-sm">詳細</Link>
                                 </li>
                             ))}
