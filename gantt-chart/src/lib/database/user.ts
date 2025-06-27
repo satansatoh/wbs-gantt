@@ -1,8 +1,8 @@
 import { cosmosClient } from './client';
 import { User } from '../../types';
+import { COSMOS_CONTAINER } from './container-constants';
 
 const DATABASE_ID = 'gantt-wbs-app';
-const CONTAINER_ID = 'users';
 
 /**
  * ユーザーを新規作成する
@@ -11,7 +11,7 @@ const CONTAINER_ID = 'users';
  */
 export async function createUser(user: User) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.USER);
     const response = await container.items.create(user);
     return response.resource ?? null;
 }
@@ -23,7 +23,7 @@ export async function createUser(user: User) {
  */
 export async function getUser(id: string) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.USER);
     const response = await container.item(id, id).read<User>();
     return response.resource ?? null;
 }
@@ -34,7 +34,7 @@ export async function getUser(id: string) {
  */
 export async function listUsers() {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.USER);
     const { resources } = await container.items.readAll<User>().fetchAll();
     return resources;
 }
@@ -47,7 +47,7 @@ export async function listUsers() {
  */
 export async function updateUser(id: string, data: Partial<User>) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.USER);
     const oldResponse = await container.item(id, id).read<User>();
     const updated = { ...oldResponse.resource, ...data, updatedAt: new Date() };
     const response = await container.items.upsert(updated);
@@ -61,7 +61,7 @@ export async function updateUser(id: string, data: Partial<User>) {
  */
 export async function deleteUser(id: string) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.USER);
     await container.item(id, id).delete();
 }
 

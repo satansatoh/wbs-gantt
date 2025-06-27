@@ -1,8 +1,8 @@
 import { cosmosClient } from './client';
 import { Task } from '../../types';
+import { COSMOS_CONTAINER } from './container-constants';
 
 const DATABASE_ID = 'gantt-wbs-app';
-const CONTAINER_ID = 'tasks';
 
 /**
  * タスクを新規作成する
@@ -11,7 +11,7 @@ const CONTAINER_ID = 'tasks';
  */
 export async function createTask(task: Task) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.TASK);
     const response = await container.items.create(task);
     return response.resource ?? null;
 }
@@ -24,7 +24,7 @@ export async function createTask(task: Task) {
  */
 export async function getTask(id: string, projectId: string) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.TASK);
     const resource = await container.item(id, projectId).read<Task>();
     return resource.resource as Task;
 }
@@ -36,7 +36,7 @@ export async function getTask(id: string, projectId: string) {
  */
 export async function listTasks(projectId: string) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.TASK);
     const query = {
         query: 'SELECT * FROM c WHERE c.projectId = @projectId',
         parameters: [{ name: '@projectId', value: projectId }],
@@ -54,7 +54,7 @@ export async function listTasks(projectId: string) {
  */
 export async function updateTask(id: string, projectId: string, data: Partial<Task>) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.TASK);
     const oldResponse = await container.item(id, projectId).read<Task>();
     const updated = { ...oldResponse.resource, ...data, updatedAt: new Date() };
     const response = await container.items.upsert(updated);
@@ -69,6 +69,6 @@ export async function updateTask(id: string, projectId: string, data: Partial<Ta
  */
 export async function deleteTask(id: string, projectId: string) {
     const database = cosmosClient.database(DATABASE_ID);
-    const container = database.container(CONTAINER_ID);
+    const container = database.container(COSMOS_CONTAINER.TASK);
     await container.item(id, projectId).delete();
 } 
