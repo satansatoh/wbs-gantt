@@ -16,6 +16,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import GanttChart, { GanttTask } from '@/components/gantt-chart';
 
 // ダミータスクデータ（WBS表形式）
 const dummyTasks = [
@@ -54,8 +55,9 @@ function getLevel(task: typeof dummyTasks[number], tasks: typeof dummyTasks): nu
     let level = 0;
     let current = task;
     while (current.parentId) {
-        current = tasks.find((t) => t.id === current.parentId)!;
-        if (!current) break;
+        const found = tasks.find((t) => t.id === current.parentId);
+        if (!found) break;
+        current = found;
         level++;
     }
     return level;
@@ -176,8 +178,17 @@ export default function ProjectTaskPage() {
     const [activeId, setActiveId] = useState<string | null>(null);
     const hasGantt = tasks.some((t) => t.startDate && t.endDate);
     const tree = buildTaskTree(tasks);
-
     const sensors = useSensors(useSensor(PointerSensor));
+
+    // GanttChart用データ変換
+    const ganttTasks: GanttTask[] = tasks.map((t) => ({
+        id: t.id,
+        name: t.title,
+        start: t.startDate.replace(/\//g, '-'),
+        end: t.endDate.replace(/\//g, '-'),
+        progress: t.progress,
+        dependencies: t.parentId ? t.parentId : '', // 親タスクIDを依存関係として設定
+    }));
 
     // ドラッグ終了時の処理（親子関係の変更対応）
     const handleDragEnd = (event: DragEndEvent) => {
@@ -287,46 +298,28 @@ export default function ProjectTaskPage() {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <div className="w-[800px] bg-white border-r p-4 overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <button onClick={() => router.back()} className="text-blue-600 hover:underline">← 戻る</button>
-                    <button className="bg-rose-500 text-white px-4 py-2 rounded hover:bg-rose-600">＋課題の追加</button>
-                </div>
-                <div className="flex font-bold bg-gray-100 border-b text-xs">
-                    <div className="w-3" />
-                    <div className="w-20 py-2 px-2">コード</div>
-                    <div className="w-28 py-2 px-2">フェーズ</div>
-                    <div className="flex-1 py-2 px-2">マイルストーン・タスク</div>
-                    <div className="w-24 py-2 px-2">着手予定</div>
-                    <div className="w-24 py-2 px-2">完了予定</div>
-                    <div className="w-28 py-2 px-2">担当者</div>
-                    <div className="w-32 py-2 px-2">進捗</div>
-                </div>
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                    onDragStart={(e: any) => {
-                        console.log("Drag started:", e.active.id);
-                        setActiveId(e.active.id as string);
-                    }}
-                >
-                    <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        <TaskTree nodes={tree} level={0} onDragHandle={() => { }} activeId={activeId} onIndent={handleIndent} onOutdent={handleOutdent} />
-                    </SortableContext>
-                </DndContext>
+        <div className="flex flex-row w-full h-[80vh] gap-4">
+            {/* ガントチャート */}
+            <div className="flex-1 bg-white rounded shadow p-2 overflow-auto min-w-[400px]">
+                <h2 className="text-lg font-bold mb-2">ガントチャート</h2>
+                <GanttChart tasks={ganttTasks} options={{ view_mode: 'Day', move_dependencies: true }} />
             </div>
-            <div className="flex-1 p-4 overflow-x-auto">
-                {hasGantt ? (
-                    <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed rounded bg-white min-h-[300px]">
-                        ガントチャート（ここに日付範囲でバーを描画予定）
+            {/* タスク一覧 */}
+            <div className="w-[480px] bg-white rounded shadow p-2 overflow-auto">
+                <h2 className="text-lg font-bold mb-2">タスク一覧</h2>
+                <div className="flex flex-col">
+                    <div className="flex items-center border-b bg-gray-100 text-xs font-bold">
+                        <div className="w-20 py-2 px-2">コード</div>
+                        <div className="w-28 py-2 px-2">フェーズ</div>
+                        <div className="flex-1 py-2 px-2">タイトル</div>
+                        <div className="w-24 py-2 px-2">開始日</div>
+                        <div className="w-24 py-2 px-2">終了日</div>
+                        <div className="w-28 py-2 px-2">担当</div>
+                        <div className="w-32 py-2 px-2">進捗</div>
+                        <div className="w-20 py-2 px-2">操作</div>
                     </div>
-                ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed rounded bg-white min-h-[300px]">
-                        日付が入力されるとガントチャートが表示されます
-                    </div>
-                )}
+                    <TaskTree nodes={tree} level={0} onDragHandle={() => { }} activeId={activeId} onIndent={() => { }} onOutdent={() => { }} />
+                </div>
             </div>
         </div>
     );

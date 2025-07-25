@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import ClientAuthInitializer from '@/components/client-auth-initializer';
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
